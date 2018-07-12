@@ -1,10 +1,15 @@
 
 var socket = io();
-var roomcode;
+var sessionID;
 
 //==============================
 // Communication via sockets
 //==============================
+
+socket.on('connect', function() {
+    sessionID = socket.io.engine.id;
+    console.log('client-side sessionID: ' + sessionID);
+});
 
 // recieve message from server
 socket.on('test-server', function(data) {
@@ -16,16 +21,16 @@ socket.emit('test-client', 'this is from client');
 
 // recieve roomcode
 socket.on('player1-joined', function(data) {
+    // now I want to add a new element that displays text and get rid of other 3 buttons
     startSetUpBoard();
     alert('Tell your opponent to join room ' + data);
     console.log('player1 joined');
-    // now I want to add a new element that displays text and get rid of other 3 buttons
 });
 
 socket.on('player2-joined', function(data) {
+    // now I want to add a new element that displays text and get rid of other 3 buttons
     startSetUpBoard();
     console.log('player2 joined');
-    // now I want to add a new element that displays text and get rid of other 3 buttons
 });
 
 socket.on('err', function(data) {
@@ -57,6 +62,11 @@ function createBoard() {
 function clickGameButton(event) {
     index = event.target.id.substring(2);
     socket.emit('game-button', index);
+    // testing
+    socket.emit('message', {
+        message: index,
+        player: sessionID
+    });
 }
 
 

@@ -21,9 +21,15 @@ server.listen(5000, function() {
 
 //---------------------------------------------------------------------------------------------------------------------//
 
-io.on('connection', function(socket) {
+var p1socketID = -1;
+var p2socketID = -2;
+var roomcode = -1;
+var message = 'hi';
+var reciever = ' ';
 
-    var roomcode = -1;
+io.on('connect', onConnect);
+
+function onConnect (socket) {
 
     //==============================
     // Local Communication via sockets
@@ -33,7 +39,20 @@ io.on('connection', function(socket) {
         console.log('server got: ' + data);
     });
 
+    socket.on('message', function(data){
+        //message = data.message;
+        reciever = (data.player == p1socketID)? p2socketID : p1socketID;
+        socket.to(reciever).emit('test-server', 'the other player sent: ' + data.message);
+    });
+
     socket.on('newRoom', function() {
+
+        // test code
+        p1socketID = socket.id;
+        console.log('NEWROOM: player 1 ID: ' + p1socketID);
+        console.log('NEWROOM: player 2 ID: ' + p2socketID);
+
+
         let code = Math.floor(Math.random() * 100);
         roomcode = 'room_'+ code;
         // join room
@@ -43,6 +62,12 @@ io.on('connection', function(socket) {
     });
 
     socket.on('joinRoom', function(data) {
+
+        // test code
+        p2socketID = socket.id;
+        console.log('JOINROOM: player 2 ID: ' + p2socketID);
+        console.log('JOINROOM: player 1 ID: ' + p1socketID);
+
         roomcode = data;
         let actualRoom = io.nsps['/'].adapter.rooms[roomcode];
         if (!actualRoom) {
@@ -54,13 +79,19 @@ io.on('connection', function(socket) {
         else {
             socket.join(roomcode);
             socket.emit('player2-joined', {});
+            // this isn't working
+            //io.sockets.emit('alert', 'inter-server communication works');
         }
     });
 
+    socket.on('alert', function(data) {
+        console.log('other server recieved: ' + data);
+    });
+    
     socket.on('game-button', function(data) {
         console.log('recieved game-button');
         // this code isn't working
-        socket.broadcast.to(roomcode).emit('game-data', data);
+        io.sockets.emit('game-data', data);
         console.log(roomcode);
     });
 
@@ -68,15 +99,19 @@ io.on('connection', function(socket) {
     // Recieving Inter-Server Communication
     //====================================
 
-    socket.on('game-data', function(data) {
-        console.log('recieved game-data');
-        console.log('opponent picked ' + data);
-    });
+    // socket.on('game-data', function(data) {
+    //     console.log('recieved game-data');
+    //     console.log('opponent picked ' + data);
+    // });
 
-});
+}
+
+//====================================
+// Sending Inter-Server Communication
+//====================================
 
 setInterval(function() {
-    io.sockets.emit('test-server', 'this is from server');
+    //io.sockets.emit('test-server', message);
 }, 1000);
 
 
