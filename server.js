@@ -21,33 +21,49 @@ server.listen(5000, function() {
 
 //---------------------------------------------------------------------------------------------------------------------//
 
+//==============================
+// Server variables
+//==============================
+
 // store connected players on server
 var p1socketID = -1;
 var p2socketID = -2;
-var reciever = ' ';
+//var recieverID = ' ';
 
-// to make sure too many people don't join same game
+// rooms make sure too many people don't join game
+var numrooms = 0;
 var roomcode = -1;
 
-io.on('connect', onConnect);
+// store ships
+var p1ships = null;
+var p2ships = null;
 
-function onConnect (socket) {
+// store guesses
+var p1guesses = null;
+var p2guesses = null;
 
-    //==============================
-    // Handle Messages From Client
-    //==============================
-    
+//==============================
+// Handle Messages From Client
+//==============================
+
+io.on('connect', function (socket) {
+
     // test that server can recieve data from client
-    socket.on('test-client', function(data) {
+    socket.on('server-log', function(data) {
         console.log('server got: ' + data);
     });
 
+    // TOOK OUT 'message'
     // test that server can recieve data from 1 client and send it to other client
-    socket.on('message', function(data){
-        //message = data.message;
-        reciever = (data.player == p1socketID)? p2socketID : p1socketID;
-        socket.to(reciever).emit('test-server', 'the other player sent: ' + data.message);
-    });
+    // socket.on('message', function(data){
+    //     //message = data.message;
+    //     let recieverID = (data.player == p1socketID)? p2socketID : p1socketID;
+    //     socket.to(recieverID).emit('client-log', 'the other player sent: ' + data.message);
+    // });
+
+    //==============================
+    // Creating and Joining Room
+    //==============================
 
     // player1 creates the room
     socket.on('newRoom', function() {
@@ -55,9 +71,8 @@ function onConnect (socket) {
         // store player1 socketID on server for future direct communication
         p1socketID = socket.id;
         
-        // generate random room code
-        let code = Math.floor(Math.random() * 100);
-        roomcode = 'room_'+ code;
+        // generate room code
+        roomcode = 'room_'+ ++numrooms;
 
         // join room
         socket.join(roomcode);
@@ -91,11 +106,90 @@ function onConnect (socket) {
         }
     });
 
+    //==============================
+    // Playing
+    //==============================
+
+    socket.on('guesses-ships', function(data) {
+
+        //console.log('server got guesses and ships');
+
+        if (data.player == p1socketID) {
+            p1ships = data.ships;
+            p1guesses = data.guesses;
+        } 
+
+        else {
+            p2ships = data.ships;
+            p2guesses = data.guesses;
+        }
+
+        // perform check and return answers
+        if (p1ships != null && p1guesses != null && p2ships != null && p2guesses != null) {
+
+            let p1answers = returnAnswers(p2ships, p1guesses); // answers to p1's guesses
+            let p2answers = returnAnswers(p1ships, p2guesses); // answers to p1's guesses
+
+            // send hits and misses to player1
+            socket.to(p1socketID).emit('your-answers', {
+                hits: p1answers.hits,
+                misses: p1answers.misses,
+            });
+            socket.to(p1socketID).emit('opponent-answers', {
+                hits: p2answers.hits,
+                misses: p2answers.misses,
+            });
+
+            console.log('sent messages to player 1');
+
+            // send hits and misses to player 2
+            socket.to(p2socketID).emit('your-answers', {
+                hits: p2answers.hits,
+                misses: p2answers.misses,
+            });
+            socket.to(p2socketID).emit('opponent-answers', {
+                hits: p1answers.hits,
+                misses: p1answers.misses,
+            });
+
+            console.log('sent messages to player 2');
+
+            // reset everything
+            p1ships = null;
+            p2ships = null;
+            p1guesses = null;
+            p2guesses = null;
+        }
+    });
+
+});
+
+//==============================
+// Server Checks Guesses
+//==============================
+
+function returnAnswers(ships, guesses) {
+    let hits = [];
+    let misses = [];
+    for (let i = 0; i < guesses.length; i++) {
+        guess = guesses[i];
+        // includes is not working
+        if (ships.includes(guess)) {
+            hits.push(guess);
+        }
+        else {
+            misses.push(guess);
+        }
+    }
+    return {
+        hits: hits,
+        misses: misses
+    };
 }
 
-// setInterval(function() {
-//     //if I ever have to send a continuous loop of messages
-//     //io.sockets.emit('test-server', message);
-// }, 1000);
+
+
+
+
 
 
