@@ -21,54 +21,62 @@ server.listen(5000, function() {
 
 //---------------------------------------------------------------------------------------------------------------------//
 
+// store connected players on server
 var p1socketID = -1;
 var p2socketID = -2;
-var roomcode = -1;
-var message = 'hi';
 var reciever = ' ';
+
+// to make sure too many people don't join same game
+var roomcode = -1;
 
 io.on('connect', onConnect);
 
 function onConnect (socket) {
 
     //==============================
-    // Local Communication via sockets
+    // Handle Messages From Client
     //==============================
     
+    // test that server can recieve data from client
     socket.on('test-client', function(data) {
         console.log('server got: ' + data);
     });
 
+    // test that server can recieve data from 1 client and send it to other client
     socket.on('message', function(data){
         //message = data.message;
         reciever = (data.player == p1socketID)? p2socketID : p1socketID;
         socket.to(reciever).emit('test-server', 'the other player sent: ' + data.message);
     });
 
+    // player1 creates the room
     socket.on('newRoom', function() {
 
-        // test code
+        // store player1 socketID on server for future direct communication
         p1socketID = socket.id;
-        console.log('NEWROOM: player 1 ID: ' + p1socketID);
-        console.log('NEWROOM: player 2 ID: ' + p2socketID);
-
-
+        
+        // generate random room code
         let code = Math.floor(Math.random() * 100);
         roomcode = 'room_'+ code;
+
         // join room
         socket.join(roomcode);
+
         // send roomcode to client
         socket.emit('player1-joined', roomcode);
     });
 
+
+    // player2 joins the room
     socket.on('joinRoom', function(data) {
 
-        // test code
+        // store player2 socketID on server for future direct communication
         p2socketID = socket.id;
-        console.log('JOINROOM: player 2 ID: ' + p2socketID);
-        console.log('JOINROOM: player 1 ID: ' + p1socketID);
 
+        // get roomcode
         roomcode = data;
+
+        // find room using room code
         let actualRoom = io.nsps['/'].adapter.rooms[roomcode];
         if (!actualRoom) {
             socket.emit('err', 'Sorry, that room does not exist');
@@ -77,41 +85,17 @@ function onConnect (socket) {
             socket.emit('err', 'Sorry, that room is full');
         }
         else {
+            // join room and notify client
             socket.join(roomcode);
             socket.emit('player2-joined', {});
-            // this isn't working
-            //io.sockets.emit('alert', 'inter-server communication works');
         }
     });
 
-    socket.on('alert', function(data) {
-        console.log('other server recieved: ' + data);
-    });
-    
-    socket.on('game-button', function(data) {
-        console.log('recieved game-button');
-        // this code isn't working
-        io.sockets.emit('game-data', data);
-        console.log(roomcode);
-    });
-
-    //====================================
-    // Recieving Inter-Server Communication
-    //====================================
-
-    // socket.on('game-data', function(data) {
-    //     console.log('recieved game-data');
-    //     console.log('opponent picked ' + data);
-    // });
-
 }
 
-//====================================
-// Sending Inter-Server Communication
-//====================================
-
-setInterval(function() {
-    //io.sockets.emit('test-server', message);
-}, 1000);
+// setInterval(function() {
+//     //if I ever have to send a continuous loop of messages
+//     //io.sockets.emit('test-server', message);
+// }, 1000);
 
 
