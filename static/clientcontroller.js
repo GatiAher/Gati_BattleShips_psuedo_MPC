@@ -1,3 +1,12 @@
+/**
+ * server.js for Gati_BattleShips_2
+ * 
+ * Handles:
+ * - User Interface: 
+ * - data to/from browser
+ * - data to/from server 
+ */
+
 var socket = io();
 
 //==============================
@@ -18,48 +27,14 @@ var numHitsOnMe = 0; // number of times opponent hits you
 var numHitsOnOppo = 0; // number of times opponent hits you
 
 //==============================
-// Handle messages from Sever
+// Handle messages from Sever - Initial Connection
 //==============================
 
 // get sessionID, print it to console, and alert server that client joined
 socket.on('connect', function() {
     sessionID = socket.io.engine.id;
-
-    // testing code
     console.log('client-side sessionID: ' + sessionID);
     socket.emit('server-log', 'I am client ' + sessionID);
-});
-
-// testing code
-// recieve message from server and print it out to console
-socket.on('client-log', function(data) {
-    console.log('client got: ' + data);
-});
-
-socket.on('disconnect', function() {
-    guesses = [];
-});
-
-//==============================
-// Handle messages from Sever - Creating and Joining Room
-//==============================
-
-// recieve roomcode and alert user, setUp new board 
-socket.on('player1-joined', function(data) {
-    alert('Tell your opponent to join: ' + data);
-    console.log('player1 joined ' + data);
-    startSetUpBoard();
-});
-
-// setUp new board
-socket.on('player2-joined', function(data) {
-    console.log('player2 joined ' + data);
-    startSetUpBoard();
-});
-
-// error, send alert with error message to user
-socket.on('err', function(data) {
-    alert(data);
 });
 
 //==============================
@@ -87,49 +62,29 @@ $(document).ready(function() {
 });
 
 //==============================
-// Handle messages from Sever - Playing
+// Handle messages from Sever - Creating and Joining Room
 //==============================
 
-// update oppoBoard
-socket.on('your-answers', function(data) {
-    for(let i = 0; i < data.hits.length; i++) {
-        let id = '#o_' + data.hits[i];
-        // hits are brownish
-        $(id).css("background-color", "Crimson");
-
-        numHitsOnOppo++;
-    }
-
-    for(let j = 0; j < data.misses.length; j++) {
-        let id = '#o_' + data.misses[j];
-        // misses are ocean blue
-        $(id).css("background-color", "DarkBlue");
-    }
+// recieve roomcode and alert user, setUp new board 
+socket.on('player1-joined', function(data) {
+    alert('Tell your opponent to join: ' + data);
+    console.log('player1 joined ' + data);
+    startSetUpBoard();
 });
 
-// update myBoard
-socket.on('opponent-answers', function(data) {
-    for(let i = 0; i < data.hits.length; i++) {
-        let id = '#m_' + data.hits[i];
-        // hits are brownish
-        $(id).css("background-color", "IndianRed");
-
-        numHitsOnMe++;
-    }
-
-    for(let j = 0; j < data.misses.length; j++) {
-        let id = '#m_' + data.misses[j];
-        // misses are ocean blue
-        $(id).css("background-color", "CornflowerBlue");
-    }
-
-    // reset canPlay, status text, and guesses array
-    resetGameVars();
+// setUp new board
+socket.on('player2-joined', function(data) {
+    console.log('player2 joined ' + data);
+    startSetUpBoard();
 });
 
+// error, send alert with error message to user
+socket.on('err', function(data) {
+    alert(data);
+});
 
 //==============================
-// Interactions with html page - Setting Up Board
+// Interactions with html page - Setting Up Boards
 //==============================
 
 // removes elements of menu and calls function to create new board
@@ -144,7 +99,7 @@ function startSetUpBoard() {
 }
 
 //==============================
-// Interactions with html page - MyBoard and Hits
+// Interactions with html page - Create and SetUp myBoard
 //============================== 
 
 // dynamically generates buttons + header
@@ -196,7 +151,7 @@ function placeShips() {
 }
 
 //==============================
-// Interactions with html page - OppoBoard and Guesses
+// Interactions with html page - Create and Allow For Guesses oppoBoard
 //==============================
 
 // dynamically generates buttons + header
@@ -243,7 +198,7 @@ function clickOppoBoardButton(event) {
         index = parseInt(event.target.id.substring(2));
         event.target.disabled = true;
         // guesses are green
-        event.target.style.background = '#4abc38';
+        event.target.style.background = '#00FA9A';
         addGuesses(index);
     }
 }
@@ -265,6 +220,47 @@ function addGuesses(guess) {
     }
 }
 
+//==============================
+// Handle messages from Sever - Update Boards When Playing
+//==============================
+
+// update oppoBoard
+socket.on('your-answers', function(data) {
+    for(let i = 0; i < data.hits.length; i++) {
+        let id = '#o_' + data.hits[i];
+        // hits are brownish
+        $(id).css("background-color", "Crimson");
+
+        numHitsOnOppo++;
+    }
+
+    for(let j = 0; j < data.misses.length; j++) {
+        let id = '#o_' + data.misses[j];
+        // misses are ocean blue
+        $(id).css("background-color", "DarkBlue");
+    }
+});
+
+// update myBoard
+socket.on('opponent-answers', function(data) {
+    for(let i = 0; i < data.hits.length; i++) {
+        let id = '#m_' + data.hits[i];
+        // hits are brownish
+        $(id).css("background-color", "IndianRed");
+
+        numHitsOnMe++;
+    }
+
+    for(let j = 0; j < data.misses.length; j++) {
+        let id = '#m_' + data.misses[j];
+        // misses are ocean blue
+        $(id).css("background-color", "CornflowerBlue");
+    }
+
+    // reset canPlay, status text, and guesses array
+    resetGameVars();
+});
+
 function resetGameVars() {
     canPlay = true;
     $('#status').text('Pick 5 locations on the enemy board to attack');
@@ -277,6 +273,10 @@ function resetGameVars() {
 
     else if(numHitsOnMe === 15) {iLost();}
 }
+
+//==============================
+// Win/Loss Statements
+//==============================
 
 function iWon() {
     $('#status').text('YOU WON!');

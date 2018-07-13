@@ -1,3 +1,12 @@
+/**
+ * server.js for Gati_BattleShips_2
+ * 
+ * Handles:
+ * - routing, serving files, 
+ * - communication to/from clients (using socket.io), putting clients in rooms
+ * - checking guesses sent by clients
+ */
+
 // Dependencies
 var express = require('express');
 var http = require('http');
@@ -48,18 +57,10 @@ var p2guesses = null;
 
 io.on('connect', function (socket) {
 
-    // test that server can recieve data from client
+    // initial message from client
     socket.on('server-log', function(data) {
         console.log('server got: ' + data);
     });
-
-    // TOOK OUT 'message'
-    // test that server can recieve data from 1 client and send it to other client
-    // socket.on('message', function(data){
-    //     //message = data.message;
-    //     let recieverID = (data.player == p1socketID)? p2socketID : p1socketID;
-    //     socket.to(recieverID).emit('client-log', 'the other player sent: ' + data.message);
-    // });
 
     //==============================
     // Creating and Joining Room
@@ -93,6 +94,8 @@ io.on('connect', function (socket) {
 
         // find room using room code
         let actualRoom = io.nsps['/'].adapter.rooms[roomcode];
+        
+        // if room has not been created or nobody is in room, send error message
         if (!actualRoom) {
             socket.emit('err', 'Sorry, that room does not exist');
         }
@@ -107,12 +110,10 @@ io.on('connect', function (socket) {
     });
 
     //==============================
-    // Playing
+    // Handling Recieving Guesses
     //==============================
 
     socket.on('guesses-ships', function(data) {
-    
-        console.log('server got guesses and ships');
 
         if (data.player == p1socketID) {
             p1ships = data.ships;
@@ -140,8 +141,6 @@ io.on('connect', function (socket) {
                 misses: p2answers.misses,
             });
 
-            console.log('sent messages to player 1');
-
             // send hits and misses to player 2
             io.to(p2socketID).emit('your-answers', {
                 hits: p2answers.hits,
@@ -152,9 +151,7 @@ io.on('connect', function (socket) {
                 misses: p1answers.misses,
             });
 
-            console.log('sent messages to player 2');
-
-            // reset everything
+            // reset vars
             p1ships = null;
             p2ships = null;
             p1guesses = null;
