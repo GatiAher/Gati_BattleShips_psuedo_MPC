@@ -102,7 +102,7 @@ io.on('connect', function (socket) {
         else {
             // join room and notify client
             socket.join(roomcode);
-            socket.emit('player2-joined', {});
+            socket.emit('player2-joined', roomcode);
         }
     });
 
@@ -111,8 +111,8 @@ io.on('connect', function (socket) {
     //==============================
 
     socket.on('guesses-ships', function(data) {
-
-        //console.log('server got guesses and ships');
+    
+        console.log('server got guesses and ships');
 
         if (data.player == p1socketID) {
             p1ships = data.ships;
@@ -131,11 +131,11 @@ io.on('connect', function (socket) {
             let p2answers = returnAnswers(p1ships, p2guesses); // answers to p1's guesses
 
             // send hits and misses to player1
-            socket.to(p1socketID).emit('your-answers', {
+            io.to(p1socketID).emit('your-answers', {
                 hits: p1answers.hits,
                 misses: p1answers.misses,
             });
-            socket.to(p1socketID).emit('opponent-answers', {
+            io.to(p1socketID).emit('opponent-answers', {
                 hits: p2answers.hits,
                 misses: p2answers.misses,
             });
@@ -143,11 +143,11 @@ io.on('connect', function (socket) {
             console.log('sent messages to player 1');
 
             // send hits and misses to player 2
-            socket.to(p2socketID).emit('your-answers', {
+            io.to(p2socketID).emit('your-answers', {
                 hits: p2answers.hits,
                 misses: p2answers.misses,
             });
-            socket.to(p2socketID).emit('opponent-answers', {
+            io.to(p2socketID).emit('opponent-answers', {
                 hits: p1answers.hits,
                 misses: p1answers.misses,
             });
@@ -172,7 +172,7 @@ function returnAnswers(ships, guesses) {
     let hits = [];
     let misses = [];
     for (let i = 0; i < guesses.length; i++) {
-        guess = guesses[i];
+        let guess = guesses[i];
         // includes is not working
         if (ships.includes(guess)) {
             hits.push(guess);

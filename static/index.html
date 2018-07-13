@@ -2,16 +2,22 @@
   <head>
     <title>A Multiplayer Game</title>
     <style>
-      button {
-        width: 200px;
-        height: 100px;
-      }
+        button {
+            width: 200px;
+            height: 100px;
+        }
+        .centered {
+            position: fixed;
+            left: 50%;
+            }
     </style>
+    <h1>Gati's BattleShip Game</h1>
     <script src="/socket.io/socket.io.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
     <script src="/static/clientcontroller.js"></script>
   </head>
   <body>
+    <h4 id="status" style="background-color:rgb(0, 255, 200);">Create or join a game</h3>
     <div id="menu">
         <button id="new">New Room</button>
         <br><br>

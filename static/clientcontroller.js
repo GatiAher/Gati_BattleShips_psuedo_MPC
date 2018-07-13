@@ -6,13 +6,16 @@ var socket = io();
 
 var sessionID;
 
-var guesses = [];
 var myShips = [];
 
-// game state variables
-//var isPlacingShip = false;
+// these reset every turn
+var guesses = [];
 var canPlay = false;
+var isSettingUp = false;
 
+// these update every time get answers from server
+var numHitsOnMe = 0; // number of times opponent hits you
+var numHitsOnOppo = 0; // number of times opponent hits you
 
 //==============================
 // Handle messages from Sever
@@ -33,6 +36,10 @@ socket.on('client-log', function(data) {
     console.log('client got: ' + data);
 });
 
+socket.on('disconnect', function() {
+    guesses = [];
+});
+
 //==============================
 // Handle messages from Sever - Creating and Joining Room
 //==============================
@@ -40,14 +47,14 @@ socket.on('client-log', function(data) {
 // recieve roomcode and alert user, setUp new board 
 socket.on('player1-joined', function(data) {
     alert('Tell your opponent to join: ' + data);
-    console.log('player1 joined');
+    console.log('player1 joined ' + data);
     startSetUpBoard();
 });
 
 // setUp new board
 socket.on('player2-joined', function(data) {
+    console.log('player2 joined ' + data);
     startSetUpBoard();
-    console.log('player2 joined');
 });
 
 // error, send alert with error message to user
@@ -83,32 +90,57 @@ $(document).ready(function() {
 // Handle messages from Sever - Playing
 //==============================
 
+// update oppoBoard
 socket.on('your-answers', function(data) {
-    console.log('got my answers');
-    console.log('my hits: ' + data.hits);
-    console.log('my misses: ' + data.misses);
+    for(let i = 0; i < data.hits.length; i++) {
+        let id = '#o_' + data.hits[i];
+        // hits are brownish
+        $(id).css("background-color", "Crimson");
 
+        numHitsOnOppo++;
+    }
+
+    for(let j = 0; j < data.misses.length; j++) {
+        let id = '#o_' + data.misses[j];
+        // misses are ocean blue
+        $(id).css("background-color", "DarkBlue");
+    }
 });
 
-
+// update myBoard
 socket.on('opponent-answers', function(data) {
-    console.log('got opponent answers');
-    console.log('opponent hits: ' + data.hits);
-    console.log('opponent misses: ' + data.misses);
+    for(let i = 0; i < data.hits.length; i++) {
+        let id = '#m_' + data.hits[i];
+        // hits are brownish
+        $(id).css("background-color", "IndianRed");
+
+        numHitsOnMe++;
+    }
+
+    for(let j = 0; j < data.misses.length; j++) {
+        let id = '#m_' + data.misses[j];
+        // misses are ocean blue
+        $(id).css("background-color", "CornflowerBlue");
+    }
+
+    // reset canPlay, status text, and guesses array
+    resetGameVars();
 });
 
 
 //==============================
-// Interactions with html page - Playing
+// Interactions with html page - Setting Up Board
 //==============================
 
 // removes elements of menu and calls function to create new board
 function startSetUpBoard() {
     $('#menu').remove();
+
     // add buttons here
     createOppoBoard();
     createMyBoard();
-    canPlay = true;
+    $('#status').text('Pick 15 locations on your board to place your ships');
+    isSettingUp = true;
 }
 
 //==============================
@@ -118,8 +150,15 @@ function startSetUpBoard() {
 // dynamically generates buttons + header
 function createMyBoard() {
     
-    $('#myBoard').append($('<h3/>', {
+    $('#myBoard').append($('<h2/>', {
         text: 'Me',
+        left: '50%',
+    }));
+
+    $('#myBoard').append($('<h4/>', {
+        text: 'Ships placed: -',
+        id: 'hitsOnMe',
+        left: '50%',
     }));
     
     for (let i = 1; i <= 8; i++) {
@@ -131,15 +170,29 @@ function createMyBoard() {
                 disabled: false,
                 width: window.innerWidth/8.5,
                 height: 25,
-            });
+                class: 'myboard-buttons',
+            }).click(placeShips);
 
             $('#myBoard').append(button);
         }
         $('#myBoard').append($('<br/>'));
     }
+}
 
-    // for now use default board
-    myShips = [16, 17, 18, 21, 22, 23, 44, 47, 54, 57, 64, 67, 72, 73, 74];
+function placeShips() {
+    if (isSettingUp) {
+        index = parseInt(event.target.id.substring(2));
+        event.target.disabled = true;
+        // guesses are green
+        event.target.style.background = '#ffffff';
+        myShips.push(index);
+        $('#hitsOnMe').text('Ships placed: ' + myShips.length);
+    }
+    if (myShips.length === 15) {
+        isSettingUp = false;
+        canPlay = true;
+        $('.myboard-buttons').attr("disabled", "disabled");
+    }
 }
 
 //==============================
@@ -149,14 +202,23 @@ function createMyBoard() {
 // dynamically generates buttons + header
 function createOppoBoard() {
 
-    $('#oppoBoard').append($('<h4/>', {
-        text: 'Status: ',
-        id: 'status',
+    // $('#oppoBoard').append($('<h4/>', {
+    //     text: 'Status: Pick 5 locations',
+    //     id: 'status',
+    // }));
+
+    $('#oppoBoard').append($('<h2/>', {
+        text: 'Opponent',
+        left: '50%',
     }));
 
-    $('#oppoBoard').append($('<h3/>', {
-        text: 'Opponent',
+    $('#oppoBoard').append($('<h4/>', {
+        text: 'Hits On Opponent: 0/15',
+        id: 'hitsOnOppo',
+        left: '50%',
     }));
+
+    $('#status').text('Pick 5 locations');
 
     for (let i = 1; i <= 8; i++) {
         //let chr = String.fromCharCode(65 + i);
@@ -180,7 +242,8 @@ function clickOppoBoardButton(event) {
     if (canPlay) {
         index = parseInt(event.target.id.substring(2));
         event.target.disabled = true;
-        event.target.style.background = '#000000';
+        // guesses are green
+        event.target.style.background = '#4abc38';
         addGuesses(index);
     }
 }
@@ -191,7 +254,7 @@ function addGuesses(guess) {
     if (guesses.length == 5) {
 
         canPlay = false;
-        $('#status').text('Waiting for results...');
+        $('#status').text('Waiting for other player...');
 
         guesses.sort(function(a, b) {return a-b});
         socket.emit('guesses-ships', {
@@ -200,4 +263,29 @@ function addGuesses(guess) {
             player: sessionID
         });
     }
+}
+
+function resetGameVars() {
+    canPlay = true;
+    $('#status').text('Pick 5 locations on the enemy board to attack');
+    $('#hitsOnMe').text('Hits On Me: ' + numHitsOnMe + '/15');
+    $('#hitsOnOppo').text('Hits On Opponent: ' + numHitsOnOppo + '/15');
+
+    guesses = [];
+
+    if (numHitsOnOppo === 15) {iWon();}
+
+    else if(numHitsOnMe === 15) {iLost();}
+}
+
+function iWon() {
+    $('#status').text('YOU WON!');
+    canPlay = false;
+    alert('YOU WON! You hit all your opponent\'s ships!');
+}
+
+function iLost() {
+    $('#status').text('YOU LOST...');
+    canPlay = false;
+    alert('YOU LOST! Your opponent hit all your ships!');
 }
