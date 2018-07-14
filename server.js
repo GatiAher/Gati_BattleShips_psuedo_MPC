@@ -9,22 +9,29 @@
 
 // Dependencies
 var express = require('express');
-var http = require('http');
-var path = require('path');
-var socketIO = require('socket.io');
 var app = express();
+
+var path = require('path');
+
+var http = require('http');
 var server = http.Server(app);
+
+var socketIO = require('socket.io');
 var io = socketIO(server);
-app.set('port', 5000);
+
+// set port
+var port = process.env.PORT || 5000; // lets server run depending on the environment port
+
+// get html file
 app.use('/static', express.static(__dirname + '/static'));
 
-// Routing
+// Routing, sending html file to browser
 app.get('/', function(request, response) {
   response.sendFile(path.join(__dirname, 'static/index.html'));
 });
 
 // Starts the server.
-server.listen(5000, function() {
+server.listen(port, function() {
   console.log('Starting server on port 5000');
 });
 
@@ -56,7 +63,8 @@ var pGuesses = [];
 
 io.on('connect', function (socket) {
 
-    let roomnum = -1; // this is the same for each connected pair of sockets
+    // to access their specific game variables, this is the same for each connected pair of sockets
+    let roomnum = -1;
 
     // initial message from client
     socket.on('server-log', function(data) {
