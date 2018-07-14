@@ -34,28 +34,29 @@ server.listen(5000, function() {
 // Server variables
 //==============================
 
-// store connected players on server
-var p1socketID = -1;
-var p2socketID = -2;
-//var recieverID = ' ';
-
 // rooms make sure too many people don't join game
 var numrooms = 0;
-var roomcode = -1;
+
+// to access their specific game variables, p1 is index 0 and p2 is index 1
+var p1 = 0;
+var p2 = 1;
+
+// store connected players on server
+var pSocketIDs = [];
 
 // store ships
-var p1ships = null;
-var p2ships = null;
+var pShips = [];
 
 // store guesses
-var p1guesses = null;
-var p2guesses = null;
+var pGuesses = [];
 
 //==============================
 // Handle Messages From Client
 //==============================
 
 io.on('connect', function (socket) {
+
+    let roomnum = -1; // this is the same for each connected pair of sockets
 
     // initial message from client
     socket.on('server-log', function(data) {
@@ -69,11 +70,21 @@ io.on('connect', function (socket) {
     // player1 creates the room
     socket.on('newRoom', function() {
 
-        // store player1 socketID on server for future direct communication
-        p1socketID = socket.id;
-        
+        // get room number then increment numrooms to generate new numrooms for each new game
+        roomnum = numrooms++;
+
         // generate room code
-        roomcode = 'room_'+ ++numrooms;
+        let roomcode = 'room_'+ roomnum;
+
+        // create room variables for the game
+        pSocketIDs[roomnum] = [];
+        pShips[roomnum] = [];
+        pGuesses[roomnum] = [];
+
+        // create room variables for player1
+        pSocketIDs[roomnum].push(socket.id);
+        pShips[roomnum].push(null);
+        pGuesses[roomnum].push(null);
 
         // join room
         socket.join(roomcode);
@@ -86,11 +97,11 @@ io.on('connect', function (socket) {
     // player2 joins the room
     socket.on('joinRoom', function(data) {
 
-        // store player2 socketID on server for future direct communication
-        p2socketID = socket.id;
+        // get room number
+        roomnum = parseInt(data.substring(5));
 
         // get roomcode
-        roomcode = data;
+        let roomcode = data;
 
         // find room using room code
         let actualRoom = io.nsps['/'].adapter.rooms[roomcode];
@@ -102,9 +113,17 @@ io.on('connect', function (socket) {
         else if (actualRoom.length != 1) {
             socket.emit('err', 'Sorry, that room is full');
         }
-        else {
-            // join room and notify client
+        else { // can join game
+
+            // create room variables for player2
+            pSocketIDs[roomnum].push(socket.id);
+            pShips[roomnum].push(null);
+            pGuesses[roomnum].push(null);
+
+            // join room
             socket.join(roomcode);
+
+            // notify client
             socket.emit('player2-joined', roomcode);
         }
     });
@@ -115,47 +134,47 @@ io.on('connect', function (socket) {
 
     socket.on('guesses-ships', function(data) {
 
-        if (data.player == p1socketID) {
-            p1ships = data.ships;
-            p1guesses = data.guesses;
+        if (data.player == pSocketIDs[roomnum][p1]) { // is player1
+            pShips[roomnum][p1] = data.ships;
+            pGuesses[roomnum][p1] = data.guesses;
         } 
 
-        else {
-            p2ships = data.ships;
-            p2guesses = data.guesses;
+        else { // is player2
+            pShips[roomnum][p2] = data.ships;
+            pGuesses[roomnum][p2] = data.guesses;
         }
 
         // perform check and return answers
-        if (p1ships != null && p1guesses != null && p2ships != null && p2guesses != null) {
+        if (pShips[roomnum][p1] != null && pShips[roomnum][p2] != null && pGuesses[roomnum][p1] != null && pGuesses[roomnum][p2] != null) {
 
-            let p1answers = returnAnswers(p2ships, p1guesses); // answers to p1's guesses
-            let p2answers = returnAnswers(p1ships, p2guesses); // answers to p1's guesses
+            let p1answers = returnAnswers(pShips[roomnum][p2], pGuesses[roomnum][p1]); // answers to p1's guesses
+            let p2answers = returnAnswers(pShips[roomnum][p1], pGuesses[roomnum][p2]); // answers to p2's guesses
 
             // send hits and misses to player1
-            io.to(p1socketID).emit('your-answers', {
+            io.to(pSocketIDs[roomnum][p1]).emit('your-answers', {
                 hits: p1answers.hits,
                 misses: p1answers.misses,
             });
-            io.to(p1socketID).emit('opponent-answers', {
+            io.to(pSocketIDs[roomnum][p1]).emit('opponent-answers', {
                 hits: p2answers.hits,
                 misses: p2answers.misses,
             });
 
             // send hits and misses to player 2
-            io.to(p2socketID).emit('your-answers', {
+            io.to(pSocketIDs[roomnum][p2]).emit('your-answers', {
                 hits: p2answers.hits,
                 misses: p2answers.misses,
             });
-            io.to(p2socketID).emit('opponent-answers', {
+            io.to(pSocketIDs[roomnum][p2]).emit('opponent-answers', {
                 hits: p1answers.hits,
                 misses: p1answers.misses,
             });
 
             // reset vars
-            p1ships = null;
-            p2ships = null;
-            p1guesses = null;
-            p2guesses = null;
+            pShips[roomnum][p1] = null;
+            pShips[roomnum][p2] = null;
+            pGuesses[roomnum][p1] = null
+            pGuesses[roomnum][p2] = null
         }
     });
 

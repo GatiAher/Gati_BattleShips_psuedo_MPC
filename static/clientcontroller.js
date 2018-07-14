@@ -68,13 +68,13 @@ $(document).ready(function() {
 // recieve roomcode and alert user, setUp new board 
 socket.on('player1-joined', function(data) {
     alert('Tell your opponent to join: ' + data);
-    console.log('player1 joined ' + data);
+    $('#room').text('Player 1 Joined ' + data);
     startSetUpBoard();
 });
 
 // setUp new board
 socket.on('player2-joined', function(data) {
-    console.log('player2 joined ' + data);
+    $('#room').text('Player 2 Joined ' + data);
     startSetUpBoard();
 });
 
@@ -156,11 +156,6 @@ function placeShips() {
 
 // dynamically generates buttons + header
 function createOppoBoard() {
-
-    // $('#oppoBoard').append($('<h4/>', {
-    //     text: 'Status: Pick 5 locations',
-    //     id: 'status',
-    // }));
 
     $('#oppoBoard').append($('<h2/>', {
         text: 'Opponent',
