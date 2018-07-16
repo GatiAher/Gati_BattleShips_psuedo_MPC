@@ -1,5 +1,5 @@
 # Gati_BattleShips_NON_MPC
-A web-based 2-player BattleShip Game written in JavaScript and html. No secure multi-party computing (MPC) added. Written for Boston University's Software and Application Innovation Lab (SAIL) internship through Greater Boston Area Research Opportunities For Young Women.
+A web-based 2-player BattleShip Game written in JavaScript and html. No secure multi-party computing (MPC) added. Written for Boston University's Software and Application Innovation Lab (SAIL) internship through Greater Boston Area Research Opportunities For Young Women (GROW).
 
 ## Installation
 Run npm in the command line from inside the project directory to automatically install the dependencies listed in `package.json`:
