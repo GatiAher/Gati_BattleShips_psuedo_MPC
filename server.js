@@ -159,24 +159,12 @@ io.on('connect', function (socket) {
             let p2answers = returnAnswers(pShips[roomnum][p1], pGuesses[roomnum][p2]); // answers to p2's guesses
 
             // send hits and misses to player1
-            io.to(pSocketIDs[roomnum][p1]).emit('your-answers', {
-                hits: p1answers.hits,
-                misses: p1answers.misses,
-            });
-            io.to(pSocketIDs[roomnum][p1]).emit('opponent-answers', {
-                hits: p2answers.hits,
-                misses: p2answers.misses,
-            });
+            io.to(pSocketIDs[roomnum][p1]).emit('your-answers', p1answers);
+            io.to(pSocketIDs[roomnum][p1]).emit('opponent-answers', p2answers);
 
             // send hits and misses to player 2
-            io.to(pSocketIDs[roomnum][p2]).emit('your-answers', {
-                hits: p2answers.hits,
-                misses: p2answers.misses,
-            });
-            io.to(pSocketIDs[roomnum][p2]).emit('opponent-answers', {
-                hits: p1answers.hits,
-                misses: p1answers.misses,
-            });
+            io.to(pSocketIDs[roomnum][p2]).emit('your-answers', p2answers);
+            io.to(pSocketIDs[roomnum][p2]).emit('opponent-answers', p1answers);
 
             // reset vars
             pShips[roomnum][p1] = null;
@@ -193,22 +181,34 @@ io.on('connect', function (socket) {
 //==============================
 
 function returnAnswers(ships, guesses) {
-    let hits = [];
-    let misses = [];
-    for (let i = 0; i < guesses.length; i++) {
-        let guess = guesses[i];
-        // includes is not working
-        if (ships.includes(guess)) {
-            hits.push(guess);
-        }
-        else {
-            misses.push(guess);
+    let answers = [1, 1, 1, 1, 1];
+    // 1 = miss
+    // 0 = hit
+    for (let g = 0; g < guesses.length; g++) {
+        for (let s = 0; s < ships.length; s++) {
+            var a = guesses[g];
+            var b = ships[s];
+            answers[g] = answers[g] * ((a == b) ? 0:1);
         }
     }
-    return {
-        hits: hits,
-        misses: misses
-    };
+    return answers;
+
+    // let hits = [];
+    // let misses = [];
+    // for (let i = 0; i < guesses.length; i++) {
+    //     let guess = guesses[i];
+    //     // includes is not working
+    //     if (ships.includes(guess)) {
+    //         hits.push(guess);
+    //     }
+    //     else {
+    //         misses.push(guess);
+    //     }
+    // }
+    // return {
+    //     hits: hits,
+    //     misses: misses
+    // };
 }
 
 

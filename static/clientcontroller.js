@@ -132,6 +132,26 @@ function createMyBoard() {
         }
         $('#myBoard').append($('<br/>'));
     }
+
+    // logs what guesses sent
+    $('#myBoard').append($('<h4/>', {
+        text: 'Guesses: -',
+        id: 'guess_log',
+        left: '50%',
+    }));
+
+    // logs what answers recieved
+    $('#myBoard').append($('<h4/>', {
+        text: 'Answers for my guesses: -',
+        id: 'my_answer_log',
+        left: '50%',
+    }));
+
+    $('#myBoard').append($('<h4/>', {
+        text: 'Answers for opponent\'s guesses: -',
+        id: 'oppo_answer_log',
+        left: '50%',
+    }));
 }
 
 function placeShips() {
@@ -217,6 +237,8 @@ function addGuesses(guess) {
         $('#status').text('Waiting for other player...');
 
         guesses.sort(function(a, b) {return a-b});
+
+        $('#guess_log').text('Guesses: ' + guesses);
         socket.emit('guesses-ships', {
             guesses: guesses,
             ships: myShips,
@@ -229,41 +251,70 @@ function addGuesses(guess) {
 // Handle messages from Sever - Update Boards When Playing
 //==============================
 
-// update oppoBoard
+// update oppoBoard first
 socket.on('your-answers', function(data) {
-    for(let i = 0; i < data.hits.length; i++) {
-        let id = '#o_' + data.hits[i];
-        // hits are brownish
-        $(id).css("background-color", "Crimson");
 
-        numHitsOnOppo++;
-    }
+    $('#my_answer_log').text('Answers for my guesses: ' + data);
 
-    for(let j = 0; j < data.misses.length; j++) {
-        let id = '#o_' + data.misses[j];
-        // misses are ocean blue
-        $(id).css("background-color", "DarkBlue");
+    for(let i = 0; i < guesses.length; i++) {
+        let id = '#o_' + guesses[i];
+        
+        if(data[i] == 0) {
+            // hits are brownish
+            $(id).css("background-color", "Crimson");
+            numHitsOnOppo++;
+        }
+        else {
+            // misses are ocean blue
+            $(id).css("background-color", "DarkBlue");
+        }
     }
+    // for(let i = 0; i < data.hits.length; i++) {
+    //     let id = '#o_' + data.hits[i];
+    //     // hits are brownish
+    //     $(id).css("background-color", "Crimson");
+
+    //     numHitsOnOppo++;
+    // }
+
+    // for(let j = 0; j < data.misses.length; j++) {
+    //     let id = '#o_' + data.misses[j];
+    //     // misses are ocean blue
+    //     $(id).css("background-color", "DarkBlue");
+    // }
 });
 
-// update myBoard
+// update myBoard second
 socket.on('opponent-answers', function(data) {
-    for(let i = 0; i < data.hits.length; i++) {
-        let id = '#m_' + data.hits[i];
-        // hits are brownish
-        $(id).css("background-color", "IndianRed");
 
-        numHitsOnMe++;
+    $('#oppo_answer_log').text('Answers for opponent\'s guesses: ' + data);
+
+    for(let i = 0; i < data.length; i++) {
+
+        if(data[i] == 0) {
+            // hits are brownish
+            numHitsOnMe++;
+        }
     }
-
-    for(let j = 0; j < data.misses.length; j++) {
-        let id = '#m_' + data.misses[j];
-        // misses are ocean blue
-        $(id).css("background-color", "CornflowerBlue");
-    }
-
     // reset canPlay, status text, and guesses array
     resetGameVars();
+
+    // for(let i = 0; i < data.hits.length; i++) {
+    //     let id = '#m_' + data.hits[i];
+    //     // hits are brownish
+    //     $(id).css("background-color", "IndianRed");
+
+    //     numHitsOnMe++;
+    // }
+
+    // for(let j = 0; j < data.misses.length; j++) {
+    //     let id = '#m_' + data.misses[j];
+    //     // misses are ocean blue
+    //     $(id).css("background-color", "CornflowerBlue");
+    // }
+
+    // // reset canPlay, status text, and guesses array
+    // resetGameVars();
 });
 
 function resetGameVars() {
