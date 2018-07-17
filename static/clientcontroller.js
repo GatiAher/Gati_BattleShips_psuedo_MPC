@@ -138,7 +138,7 @@ function placeShips() {
     if (isSettingUp) {
         index = parseInt(event.target.id.substring(2));
         event.target.disabled = true;
-        // guesses are green
+        // placement is white
         event.target.style.background = '#ffffff';
         myShips.push(index);
         $('#hitsOnMe').text('Ships placed: ' + myShips.length);
@@ -157,6 +157,17 @@ function placeShips() {
 // dynamically generates buttons + header
 function createOppoBoard() {
 
+    $('#oppoBoard').append($('<div/>', {
+        id: 'key',
+        left: '50%',
+    }));
+
+    $('#key').append('<p style="color:Crimson;">HITS are RED</p>');
+    $('#key').append('<p style="color:DarkBlue;">MISSES are BLUE</p>');
+    $('#key').append('<p style="color:#00FA9A;">GUESSES are GREEN</p>');
+    $('#key').append('<p style="color:black;">Your undiscovered ships are WHITE</p>');
+    
+
     $('#oppoBoard').append($('<h2/>', {
         text: 'Opponent',
         left: '50%',
@@ -171,7 +182,6 @@ function createOppoBoard() {
     $('#status').text('Pick 5 locations');
 
     for (let i = 1; i <= 8; i++) {
-        //let chr = String.fromCharCode(65 + i);
         for(let j = 1; j <= 8; j++) {
             var button = $('<button/>', {
                 text: i + '' + j,
@@ -193,7 +203,7 @@ function clickOppoBoardButton(event) {
         index = parseInt(event.target.id.substring(2));
         event.target.disabled = true;
         // guesses are green
-        event.target.style.background = '#00FA9A';
+        event.target.style.background = 'MediumSeaGreen';
         addGuesses(index);
     }
 }
