@@ -181,14 +181,14 @@ io.on('connect', function (socket) {
 //==============================
 
 function returnAnswers(ships, guesses) {
-    let answers = [1, 1, 1, 1, 1];
-    // 1 = miss
-    // 0 = hit
+    let answers = [0, 0, 0, 0, 0];
+    // 0 = miss
+    // 1 = hit
     for (let g = 0; g < guesses.length; g++) {
         for (let s = 0; s < ships.length; s++) {
             var a = guesses[g];
             var b = ships[s];
-            answers[g] = answers[g] * ((a == b) ? 0:1);
+            answers[g] = answers[g] + ((a == b) ? 1:0);
         }
     }
     return answers;

@@ -259,7 +259,7 @@ socket.on('your-answers', function(data) {
     for(let i = 0; i < guesses.length; i++) {
         let id = '#o_' + guesses[i];
         
-        if(data[i] == 0) {
+        if(data[i] == 1) {
             // hits are brownish
             $(id).css("background-color", "Crimson");
             numHitsOnOppo++;
@@ -291,7 +291,7 @@ socket.on('opponent-answers', function(data) {
 
     for(let i = 0; i < data.length; i++) {
 
-        if(data[i] == 0) {
+        if(data[i] == 1) {
             // hits are brownish
             numHitsOnMe++;
         }
